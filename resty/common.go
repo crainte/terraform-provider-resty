@@ -2,7 +2,7 @@ package resty
 
 import (
     "fmt"
-    "github.com/hashicorp/terraform/helper/schema"
+    //"github.com/hashicorp/terraform/helper/schema"
     "log"
     "strings"
 )

@@ -5,7 +5,10 @@ import (
     "log"
     "time"
     "bytes"
+    "strings"
     "net/http"
+    "io/ioutil"
+    "crypto/tls"
     "encoding/json"
 
     "github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -13,108 +16,113 @@ import (
 
 func resourceREST() *schema.Resource {
     return &schema.Resource{
-        Create: restyRequest
+        Create: restyRequest,
         Read:   restyRequest,
         Update: restyRequest,
         Delete: restyRequest,
         Exists: restyExists,
 
         Schema: map[string]*schema.Schema{
-            "url": &schema.Schema(
+            "url": {
                 Type: schema.TypeString,
                 Description: "The request URL",
                 Required: true,
                 ForceNew: true,
-            ),
-            "method": &schema.Schema(
+            },
+            "method": {
                 Type: schema.TypeString,
                 Description: "The http request verb",
                 Default: "GET",
                 Optional: true,
-            ),
-            "headers": &schema.Schema(
+            },
+            "headers": {
                 Type: schema.TypeMap,
                 Description: "Extra headers for the request",
                 Optional: true,
-                Sensitive: true
-            ),
-            "data": &schema.Schema(
+                Sensitive: true,
+            },
+            "data": {
                 Type: schema.TypeString,
                 Description: "Data sent during the request",
                 Optional: true,
-                Sensitive: true
-            ),
+                Sensitive: true,
+            },
 
-            "insecure": &schema.Schema(
+            "insecure": {
                 Type: schema.TypeBool,
                 Description: "Validate Certificate",
                 Default: true,
-                Optional: true
-            ),
-            "force_new": &schema.Schema{
+                Optional: true,
+            },
+            "force_new": {
                 Type:        schema.TypeList,
                 Elem:        &schema.Schema{Type: schema.TypeString},
                 Description: "Create a new instance if any of these items changes",
                 Optional:    true,
                 ForceNew:    true,
             },
-            "id_field": &schema.Schema(
+            "id_field": {
                 Type: schema.TypeString,
                 Description: "Default ID field",
                 Default: "id",
-                Optional: true
-            ),
-            "timeout": &schema.Schema(
+                Optional: true,
+            },
+            "timeout": {
                 Type: schema.TypeInt,
                 Description: "HTTP Timeout",
                 Default: 10,
-                Optional: true
-            ),
-            "username": &schema.Schema(
+                Optional: true,
+            },
+            "username": {
                 Type: schema.TypeString,
                 Description: "Basic Auth Username",
                 Optional: true,
-                Sensitive: true
-            ),
-            "password": &schema.Schema(
+                Sensitive: true,
+            },
+            "password": {
                 Type: schema.TypeString,
                 Description: "Basic Auth Password",
                 Optional: true,
-                Sensitive: true
-            ),
-            "debug": &schema.Schema(
+                Sensitive: true,
+            },
+            "debug": {
                 Type: schema.TypeBool,
                 Description: "Print Debug Information",
                 Default: false,
-                Optional: true
-            ),
+                Optional: true,
+            },
 
-            "search_key": &schema.Schema(
+            "search_key": {
                 Type: schema.TypeString,
                 Description: "Search the results for a key",
-                Optional: true
-            ),
-            "search_value": &schema.Schema(
+                Optional: true,
+            },
+            "search_value": {
                 Type: schema.TypeString,
                 Description: "Collect the results from key[value]",
-                Optional: true
-            ),
+                Optional: true,
+            },
 
-            "response": &schema.Schema(
+            "response": {
                 Type: schema.TypeString,
                 Description: "Response from the request",
-                Computed: true
-            ),
+                Computed: true,
+            },
 
-        }
+        },
     }
 }
 
 func restyRequest(d *schema.ResourceData, meta interface{}) error {
 
+    var req *http.Request
+    var err error
+
+    response := make(map[string]interface{})
+
     url := d.Get("url").(string)
     method := d.Get("method").(string)
-    headers := d.Get("headers").(map[string]interface{})
+    headers := d.Get("headers").(map[string]string)
     data := d.Get("data").(string)
     username := d.Get("username").(string)
     password := d.Get("password").(string)
@@ -122,7 +130,7 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
     id_field := d.Get("id_field").(string)
 
     transport := &http.Transport{
-        TLSClientConfig: &tls.Config(InsecureSkipVerify: d.Get("insecure").(bool),
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: d.Get("insecure").(bool)},
         Proxy: http.ProxyFromEnvironment,
     }
 
@@ -133,9 +141,9 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 
     buffer := bytes.NewBuffer([]byte(data))
     if data == "" {
-        req, err := http.NewRequest(method, url, nil)
+        req, err = http.NewRequest(method, url, nil)
     } else {
-        req, err := http.NewRequest(method, url, buffer)
+        req, err = http.NewRequest(method, url, buffer)
         req.Header.Set("Content-Type", "application/json")
     }
 
@@ -144,7 +152,7 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
     }
 
     if len(headers) > 0 {
-        for k, v := range client.headers {
+        for k, v := range headers {
             req.Header.Set(k, v)
         }
     }
@@ -169,8 +177,7 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
         log.Printf("%s\n", body)
     }
 
-    resp, err := client.http_client.Do(req)
-        resp, err := client.Do(req)
+    resp, err := client.Do(req)
     if err != nil {
         return fmt.Errorf("Error making a request: %s", err)
     }
@@ -187,7 +194,7 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
     }
 
     if debug {
-        log.Printf("RESTY: Response Body:\n%s\n", response_body)
+        log.Printf("RESTY: Response Body:\n%s\n", string(response_body))
     }
 
     response_headers := make(map[string]string)
@@ -202,13 +209,13 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
         return fmt.Errorf("Error setting HTTP Response Headers: %s", err)
     }
 
-    if response_body != "" {
-        err := json.Unmarshal([]byte(response_body), map[string]interface{})
+    if string(response_body) != "" {
+        err := json.Unmarshal([]byte(response_body), &response)
         if err != nil {
             log.Printf("RESTY: Non-Fatal error parsing body as JSON")
             d.SetId(time.Now().UTC().String())
         } else {
-            id, err := GetStringAtKey(response_body, id_field, debug)
+            id, err := GetStringAtKey(response, id_field, debug)
             if err == nil {
                 d.SetId(id)
             } else {
@@ -220,4 +227,6 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
     return nil
 }
 
-func restyExists(d *schema.ResourceData, meta interface{}) (bool, error) {}
+func restyExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+    return true, nil
+}
