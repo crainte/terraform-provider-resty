@@ -51,7 +51,7 @@ func resourceREST() *schema.Resource {
             "insecure": {
                 Type: schema.TypeBool,
                 Description: "Validate Certificate",
-                Default: true,
+                Default: false,
                 Optional: true,
             },
             "force_new": {
