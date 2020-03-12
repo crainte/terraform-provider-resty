@@ -1,4 +1,0 @@
-default: build
-
-build: 
-	go build -o terraform-provider-resty_v0.0.1
