@@ -2,7 +2,6 @@ package resty
 
 import (
     "fmt"
-    //"github.com/hashicorp/terraform/helper/schema"
     "log"
     "strings"
 )
@@ -65,7 +64,7 @@ func GetObjectAtKey(data map[string]interface{}, path string, debug bool) (inter
         /* See if this key exists in the hash at this point */
         if _, ok := hash[part]; ok {
             if debug {
-                log.Printf("common.go:GetObjectAtKey:  %s - exists", part)
+                log.Printf("common.go:for GetObjectAtKey:  %s - exists", part)
             }
             seen += "/" + part
             if tmp, ok := hash[part].(map[string]interface{}); ok {

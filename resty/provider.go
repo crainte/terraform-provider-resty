@@ -7,10 +7,8 @@ import (
 
 func Provider() terraform.ResourceProvider {
         return &schema.Provider{
-                Schema: map[string]*schema.Schema{},
                 ResourcesMap: map[string]*schema.Resource{
                     "resty": resourceREST(),
                 },
-                DataSourcesMap: map[string]*schema.Resource{},
         }
 }
