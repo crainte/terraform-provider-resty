@@ -17,9 +17,9 @@ import (
 func resourceREST() *schema.Resource {
     return &schema.Resource{
         Create: restyRequest,
-        Read:   restyRequest,
+        Read:   restyRead,
         Update: restyRequest,
-        Delete: restyRequest,
+        Delete: restyDelete,
         Exists: restyExists,
 
         Schema: map[string]*schema.Schema{
@@ -128,6 +128,23 @@ func resourceREST() *schema.Resource {
 
         },
     }
+}
+
+func restyRead(d *schema.ResourceData, meta interface{}) error {
+
+    id := d.Id()
+
+    if id == "" {
+        d.SetId("")
+        return fmt.Errorf("Item not found")
+    }
+
+    return nil
+}
+
+func restyDelete(d *schema.ResourceData, meta interface{}) error {
+    d.SetId("")
+    return nil
 }
 
 func restyRequest(d *schema.ResourceData, meta interface{}) error {
