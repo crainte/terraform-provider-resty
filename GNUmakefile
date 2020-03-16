@@ -1,3 +1,4 @@
+VERSION=v0.0.2
 TEST?=$$(go list ./...)
 GOFMT_FILES?=$$(gofmt -l `find . -name '*.go'`)
 
@@ -7,9 +8,9 @@ build: fmtcheck
 	go build -o build/bin/terraform-provider-resty
 
 release: fmtcheck
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/bin/terraform-provider-resty_v0.0.1-linux-amd64
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o build/bin/terraform-provider-resty_v0.0.1-darwin-amd64
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o build/bin/terraform-provider-resty_v0.0.1-windows-amd64
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/bin/terraform-provider-resty_$(VERSION)-linux-amd64
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o build/bin/terraform-provider-resty_$(VERSION)-darwin-amd64
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o build/bin/terraform-provider-resty_$(VERSION)-windows-amd64
 
 test: fmtcheck
 	@go test -i $(TEST) || exit 1
