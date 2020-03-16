@@ -14,6 +14,10 @@ release: fmtcheck
 
 test: fmtcheck
 	@go test -i $(TEST) || exit 1
+	@echo " >> Running tests"
+	@go test -v $(TEST)
+
+gotest: fmtcheck
 	@gotestsum --format testname $(TEST)
 
 fmt:
@@ -31,4 +35,4 @@ endif
 clean:
 	rm build/bin/*
 
-.PHONY: build release fmt fmtcheck clean
+.PHONY: build release test gotest fmt fmtcheck clean
