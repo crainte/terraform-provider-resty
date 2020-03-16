@@ -5,4 +5,5 @@ jobs:
       - image: circleci/golang:1.12
     steps:
       - checkout
+      - run: curl -sSL "https://github.com/gotestyourself/gotestsum/releases/download/v0.4.1/gotestsum_0.4.1_linux_amd64.tar.gz" | sudo tar -xz -C /usr/local/bin gotestsum
       - run: make test
