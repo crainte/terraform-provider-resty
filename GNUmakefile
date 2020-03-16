@@ -13,8 +13,7 @@ release: fmtcheck
 
 test: fmtcheck
 	@go test -i $(TEST) || exit 1
-	@echo " >> Running Tests"
-	@go test -v $(TEST)
+	@gotestsum --format testname $(TEST)
 
 fmt:
 	gofmt -w $(GOFMT_FILES)
