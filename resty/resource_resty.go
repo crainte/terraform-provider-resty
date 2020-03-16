@@ -59,6 +59,7 @@ func resourceREST() *schema.Resource {
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Description: "Create a new instance if any of these items changes",
 				Optional:    true,
+				Sensitive:   true,
 				ForceNew:    true,
 			},
 			"id_field": {
