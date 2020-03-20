@@ -313,7 +313,7 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	return nil
+	return restyRead(d, meta)
 }
 
 func restyExists(d *schema.ResourceData, meta interface{}) (bool, error) {
