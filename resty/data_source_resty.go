@@ -6,7 +6,7 @@ import (
 
 func dataSourceREST() *schema.Resource {
 	return &schema.Resource{
-		Read:   restyRequest,
+		Read: restyRequest,
 
 		Schema: map[string]*schema.Schema{
 			"url": {

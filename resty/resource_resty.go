@@ -39,7 +39,6 @@ func resourceREST() *schema.Resource {
 				Type:        schema.TypeMap,
 				Description: "Extra headers for the request",
 				Optional:    true,
-				Sensitive:   true,
 			},
 			"data": {
 				Type:        schema.TypeString,
@@ -158,7 +157,7 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 
 	url := d.Get("url").(string)
 	method := d.Get("method").(string)
-	headers := d.Get("headers").(map[string]interface{})
+	additional_headers := d.Get("headers").(map[string]interface{})
 	data := d.Get("data").(string)
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
@@ -168,6 +167,8 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 	timeout := d.Get("timeout").(int)
 	insecure := d.Get("insecure").(bool)
 	filters := d.Get("filter").([]interface{})
+
+	base_headers := meta.(*ParentClient).headers
 
 	d.Set("id_field", id_field)
 	d.Set("insecure", insecure)
@@ -195,8 +196,16 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("Error building request: %s", err)
 	}
 
-	if len(headers) > 0 {
-		for k, v := range headers {
+	// set base headers
+	if len(base_headers) > 0 {
+		for k, v := range base_headers {
+			req.Header.Set(k, v)
+		}
+	}
+
+	// allow override of additional headers
+	if len(additional_headers) > 0 {
+		for k, v := range additional_headers {
 			req.Header.Set(k, v.(string))
 		}
 	}
