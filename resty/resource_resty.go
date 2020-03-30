@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 	"time"
 
@@ -215,22 +216,9 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if debug {
-		log.Printf("[RESTY] Request headers:\n")
-		for k, v := range req.Header {
-			for _, h := range v {
-				log.Printf("[RESTY]     %v: %v", k, h)
-			}
-		}
-
-		log.Printf("[RESTY] Request Body:\n")
-		body := "<none>"
-		if req.Body != nil {
-			body = string(data)
-		}
-		log.Printf("%s\n", body)
+        reqDump, _ := httputil.DumpRequest(req, true)
+        log.Printf("[RESTY] Request:\n%s", string(reqDump))
 	}
-
-	log.Printf("[RESTY] Making request")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -239,8 +227,13 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 
 	defer resp.Body.Close()
 
+	if debug {
+        respDump, _ := httputil.DumpResponse(resp, true)
+        log.Printf("[RESTY] Response:\n%s", string(respDump))
+    }
+
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("HTTP request error. Response code: %d", resp.StatusCode)
+        return fmt.Errorf("HTTP request error. Response code: %d", resp.StatusCode)
 	}
 
 	response_body, err := ioutil.ReadAll(resp.Body)
