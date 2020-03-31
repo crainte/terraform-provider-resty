@@ -216,8 +216,8 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if debug {
-        reqDump, _ := httputil.DumpRequest(req, true)
-        log.Printf("[RESTY] Request:\n%s", string(reqDump))
+		reqDump, _ := httputil.DumpRequest(req, true)
+		log.Printf("[RESTY] Request:\n%s", string(reqDump))
 	}
 
 	resp, err := client.Do(req)
@@ -228,12 +228,12 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 	defer resp.Body.Close()
 
 	if debug {
-        respDump, _ := httputil.DumpResponse(resp, true)
-        log.Printf("[RESTY] Response:\n%s", string(respDump))
-    }
+		respDump, _ := httputil.DumpResponse(resp, true)
+		log.Printf("[RESTY] Response:\n%s", string(respDump))
+	}
 
 	if resp.StatusCode != 200 {
-        return fmt.Errorf("HTTP request error. Response code: %d", resp.StatusCode)
+		return fmt.Errorf("HTTP request error. Response code: %d", resp.StatusCode)
 	}
 
 	response_body, err := ioutil.ReadAll(resp.Body)
@@ -290,6 +290,9 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 										break Done
 									}
 								}
+							}
+							if len(output) == 0 {
+								return fmt.Errorf("Response no filter match for: %s = %s", name, value)
 							}
 						} else {
 							output = response[key].(map[string]interface{})

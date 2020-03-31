@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -61,6 +62,29 @@ func TestResourceGet(t *testing.T) {
 	})
 }
 
+const testResourceConfig_404 = `
+resource "resty" "test" {
+  url    = "%s/nope"
+  method = "GET"
+}
+`
+
+func TestResourceGet_404(t *testing.T) {
+	mock := initMockHttpServer()
+
+	defer mock.server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		Providers: testProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      fmt.Sprintf(testResourceConfig_404, mock.server.URL),
+				ExpectError: regexp.MustCompile("HTTP request error. Response code: 404"),
+			},
+		},
+	})
+}
+
 const testResourceConfigHeaders = `
 resource "resty" "test" {
   url     = "%s/headers"
@@ -104,6 +128,32 @@ func TestResourceGet_withHeaders(t *testing.T) {
 
 					return nil
 				},
+			},
+		},
+	})
+}
+
+const testResourceConfigHeaders_401 = `
+resource "resty" "test" {
+  url     = "%s/headers"
+  method  = "GET"
+  headers = {
+    "Authorization" = "nope"
+  }
+}
+`
+
+func TestResourceGet_withBadHeaders(t *testing.T) {
+	mock := initMockHttpServer()
+
+	defer mock.server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		Providers: testProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      fmt.Sprintf(testResourceConfigHeaders_401, mock.server.URL),
+				ExpectError: regexp.MustCompile("HTTP request error. Response code: 401"),
 			},
 		},
 	})
@@ -161,6 +211,37 @@ func TestResourceGet_withFilter(t *testing.T) {
 	})
 }
 
+const testResourceConfigMissingFilter = `
+resource "resty" "test" {
+  url     = "%s/filter"
+  method  = "GET"
+  headers = {
+    "Authorization" = "ZGVhZDpiZWVmCg=="
+  }
+  key = "content"
+  filter {
+    name  = "interesting"
+    value = "missing"
+  }
+}
+`
+
+func TestResourceGet_withMissingFilter(t *testing.T) {
+	mock := initMockHttpServer()
+
+	defer mock.server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		Providers: testProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      fmt.Sprintf(testResourceConfigMissingFilter, mock.server.URL),
+				ExpectError: regexp.MustCompile("Response no filter match for: interesting = missing"),
+			},
+		},
+	})
+}
+
 func initMockHttpServer() *testHttpMock {
 	Server := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -175,14 +256,14 @@ func initMockHttpServer() *testHttpMock {
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte("{}"))
 				} else {
-					w.WriteHeader(http.StatusForbidden)
+					w.WriteHeader(http.StatusUnauthorized)
 				}
 			} else if r.URL.Path == "/filter" {
 				if r.Header.Get("Authorization") == "ZGVhZDpiZWVmCg==" {
 					w.WriteHeader(http.StatusOK)
 					w.Write([]byte("{\"content\": [{\"interesting\": \"no\", \"you\": \"failed\"},{\"interesting\": \"value\", \"working\": \"yes\"}]}"))
 				} else {
-					w.WriteHeader(http.StatusForbidden)
+					w.WriteHeader(http.StatusUnauthorized)
 				}
 			} else {
 				w.WriteHeader(http.StatusNotFound)
