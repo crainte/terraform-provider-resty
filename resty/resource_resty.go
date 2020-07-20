@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -178,6 +179,12 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 		Proxy:           http.ProxyFromEnvironment,
+        Dial: (&net.Dialer{
+            Timeout:   time.Second * 30,
+            KeepAlive: time.Second * 30,
+        }).Dial,
+        TLSHandshakeTimeout:   time.Second * 10,
+        ResponseHeaderTimeout: time.Second * 10,
 	}
 
 	client := &http.Client{
