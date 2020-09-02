@@ -75,6 +75,12 @@ func resourceREST() *schema.Resource {
 				Default:     10,
 				Optional:    true,
 			},
+			"retries": {
+				Type:        schema.TypeInt,
+				Description: "HTTP Retries",
+				Default:     1,
+				Optional:    true,
+			},
 			"username": {
 				Type:        schema.TypeString,
 				Description: "Basic Auth Username",
@@ -167,6 +173,7 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 	id_field := d.Get("id_field").(string)
 	key := d.Get("key").(string)
 	timeout := d.Get("timeout").(int)
+	retries := d.Get("retries").(int)
 	insecure := d.Get("insecure").(bool)
 	filters := d.Get("filter").([]interface{})
 
@@ -175,16 +182,17 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 	d.Set("id_field", id_field)
 	d.Set("insecure", insecure)
 	d.Set("timeout", timeout)
+	d.Set("retries", retries)
 
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
 		Proxy:           http.ProxyFromEnvironment,
-        Dial: (&net.Dialer{
-            Timeout:   time.Second * 30,
-            KeepAlive: time.Second * 30,
-        }).Dial,
-        TLSHandshakeTimeout:   time.Second * 10,
-        ResponseHeaderTimeout: time.Second * 10,
+		Dial: (&net.Dialer{
+			Timeout:   time.Second * 30,
+			KeepAlive: time.Second * 30,
+		}).Dial,
+		TLSHandshakeTimeout:   time.Second * 10,
+		ResponseHeaderTimeout: time.Second * 10,
 	}
 
 	client := &http.Client{
@@ -228,8 +236,21 @@ func restyRequest(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	resp, err := client.Do(req)
+
 	if err != nil {
-		return fmt.Errorf("Error making a request: %s", err)
+		log.Printf("[RESTY] Error making request: %s", err)
+		for retries > 0 {
+			resp, err = client.Do(req)
+			if err != nil {
+				log.Printf("[RESTY] Error making request: %s", err)
+				retries -= 1
+			} else {
+				break
+			}
+		}
+		if err != nil {
+			return fmt.Errorf("Error making a request: %s", err)
+		}
 	}
 
 	defer resp.Body.Close()
