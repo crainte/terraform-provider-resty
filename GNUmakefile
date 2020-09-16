@@ -1,4 +1,4 @@
-VERSION=v0.0.6
+VERSION=v0.0.7
 TEST?=$$(go list ./...)
 GOFMT_FILES?=$$(gofmt -l `find . -name '*.go'`)
 
