@@ -60,6 +60,12 @@ func dataSourceREST() *schema.Resource {
 				Default:     10,
 				Optional:    true,
 			},
+			"retries": {
+				Type:        schema.TypeInt,
+				Description: "HTTP Retries",
+				Default:     1,
+				Optional:    true,
+			},
 			"username": {
 				Type:        schema.TypeString,
 				Description: "Basic Auth Username",
